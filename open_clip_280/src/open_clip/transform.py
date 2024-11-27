@@ -3,12 +3,45 @@ from typing import Optional, Sequence, Tuple
 import torch
 import torch.nn as nn
 import torchvision.transforms.functional as F
+from networkx.algorithms.cuts import cut_size
 
 from torchvision.transforms import Normalize, Compose, RandomResizedCrop, InterpolationMode, ToTensor, Resize, \
     CenterCrop
 
 from .constants import OPENAI_DATASET_MEAN, OPENAI_DATASET_STD
+import numpy as np
+from PIL import Image
 
+class CustomCompose(Compose):
+    def __call__(self, img):
+        # Custom implementation of __call__ method
+        if isinstance(img, np.ndarray) or isinstance(img, list):
+            # Custom processing for numpy arrays
+            def apply_custom_transforms(temp):
+                im = Image.fromarray(temp.astype('uint8'), 'RGB')
+                for t in self.transforms:
+                    # Apply each transform (this part can be customized as needed)
+                    im = t(im)
+                return im
+
+            arr = list(map(apply_custom_transforms, img))
+            return np.array(arr)
+
+        # Custom processing for non-numpy array images
+        for t in self.transforms:
+            # Apply each transform (this part can be customized as needed)
+            img = t(img)
+
+        return img
+
+    def __repr__(self) -> str:
+        # Optionally, customize the string representation as well
+        format_string = self.__class__.__name__ + "("
+        for t in self.transforms:
+            format_string += "\n"
+            format_string += f"    {t}"
+        format_string += "\n)"
+        return format_string
 
 class ResizeMaxSize(nn.Module):
 
@@ -47,6 +80,7 @@ def image_transform(
         std: Optional[Tuple[float, ...]] = None,
         resize_longest_max: bool = False,
         fill_color: int = 0,
+        test=True
 ):
     mean = mean or OPENAI_DATASET_MEAN
     if not isinstance(mean, (list, tuple)):
@@ -83,4 +117,6 @@ def image_transform(
             ToTensor(),
             normalize,
         ])
-        return Compose(transforms)
+        # if test:
+        return CustomCompose(transforms)
+        # return Compose(transforms)

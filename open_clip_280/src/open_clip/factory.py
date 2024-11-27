@@ -147,6 +147,7 @@ def create_model_and_transforms(
         image_mean: Optional[Tuple[float, ...]] = None,
         image_std: Optional[Tuple[float, ...]] = None,
         cache_dir: Optional[str] = None,
+        test=False
 ):
     model = create_model(
         model_name, pretrained, precision, device, jit,
@@ -157,7 +158,7 @@ def create_model_and_transforms(
     image_mean = image_mean or getattr(model.visual, 'image_mean', None)
     image_std = image_std or getattr(model.visual, 'image_std', None)
     preprocess_train = image_transform(model.visual.image_size, is_train=True, mean=image_mean, std=image_std)
-    preprocess_val = image_transform(model.visual.image_size, is_train=False, mean=image_mean, std=image_std)
+    preprocess_val = image_transform(model.visual.image_size, is_train=False, mean=image_mean, std=image_std, test=False)
 
     return model, preprocess_train, preprocess_val
 
